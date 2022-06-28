@@ -7,12 +7,10 @@ import br.ce.wcaquino.entidades.Usuario;
 import br.ce.wcaquino.exceptions.FilmeSemEstoqueException;
 import br.ce.wcaquino.exceptions.LocadoraException;
 import br.ce.wcaquino.matchers.DiaSemanaMatcher;
-import br.ce.wcaquino.runners.ParallelRunner;
 import br.ce.wcaquino.utils.DataUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.Is;
 import org.junit.*;
-import org.junit.runner.RunWith;
 import org.mockito.*;
 
 import java.lang.reflect.InvocationTargetException;
@@ -32,7 +30,7 @@ import static br.ce.wcaquino.utils.DataUtils.obterDataComDiferencaDias;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-@RunWith(ParallelRunner.class)
+//@RunWith(ParallelRunner.class)
 public class LocacaoServiceTest {
 
     @Mock

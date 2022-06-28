@@ -1,13 +1,11 @@
 package br.ce.wcaquino.servicos;
 
-import br.ce.wcaquino.runners.ParallelRunner;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-@RunWith(ParallelRunner.class)
+//@RunWith(ParallelRunner.class)
 public class CalculadoraTest {
 
     private Calculadora calculadora;
