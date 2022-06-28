@@ -6,16 +6,15 @@ import br.ce.wcaquino.entidades.Locacao;
 import br.ce.wcaquino.entidades.Usuario;
 import br.ce.wcaquino.exceptions.FilmeSemEstoqueException;
 import br.ce.wcaquino.exceptions.LocadoraException;
-import br.ce.wcaquino.servicos.builders.LocacaoBuilder;
 import br.ce.wcaquino.servicos.matchers.DiaSemanaMatcher;
 import br.ce.wcaquino.utils.DataUtils;
 import org.hamcrest.MatcherAssert;
+import org.hamcrest.core.Is;
 import org.junit.*;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -26,14 +25,12 @@ import static br.ce.wcaquino.servicos.builders.FilmeBuilder.umFilmeSemEstoque;
 import static br.ce.wcaquino.servicos.builders.LocacaoBuilder.umaLocacao;
 import static br.ce.wcaquino.servicos.builders.UsuarioBuilder.umUsuario;
 import static br.ce.wcaquino.servicos.matchers.OwnMatchers.*;
+import static br.ce.wcaquino.utils.DataUtils.obterData;
 import static br.ce.wcaquino.utils.DataUtils.obterDataComDiferencaDias;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class LocacaoServiceTest {
-
-//    @Rule
-//    public ErrorCollector error = new ErrorCollector();
 
     @Mock
     private SpcService spcService;
@@ -42,6 +39,7 @@ public class LocacaoServiceTest {
     @Mock
     private LocacaoDao dao;
     @InjectMocks
+    @Spy
     private LocacaoService service;
 
     private static int contador;
@@ -74,7 +72,7 @@ public class LocacaoServiceTest {
     }
 
     @Test
-    public void deveFazerLocarComSucesso() throws Exception {
+    public void deveFazerLocarComSucesso_Assume() throws Exception {
         // Assume que só deve executar quando o new Date() nao for Sabado
         Assume.assumeFalse(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
 
@@ -85,11 +83,6 @@ public class LocacaoServiceTest {
         //acao
         Locacao locacao = service.alugarFilmes(usuario, List.of(filme1));
 
-        // verificacao via @Rule ErrorCollector
-//        this.error.checkThat(locacao.getValor(), Is.is(6.0));
-//        this.error.checkThat(DataUtils.isMesmaData(locacao.getDataLocacao(), new Date()), Is.is(true));
-//        this.error.checkThat(DataUtils.isMesmaData(locacao.getDataRetorno(), DataUtils.obterDataComDiferencaDias(1)), Is.is(false));
-
         //verificacao via Assert
         Assert.assertEquals(5.0, locacao.getValor(), 0.01);
 
@@ -98,6 +91,23 @@ public class LocacaoServiceTest {
 
         Assert.assertTrue(DataUtils.isMesmaData(locacao.getDataRetorno(), obterDataComDiferencaDias(1)));
         MatcherAssert.assertThat(locacao.getDataRetorno(), ehHojeComDiferencaDias(1));
+    }
+
+    @Test
+    public void deveFazerLocarComSucesso_mockandoObterData() throws Exception {
+        //cenario
+        Usuario usuario = umUsuario().get();
+        Filme filme1 = umFilme().comValor(5.0).get();
+
+        doReturn(DataUtils.obterData(28, 4, 2017)).when(service).obterData();
+
+        //acao
+        Locacao locacao = service.alugarFilmes(usuario, List.of(filme1));
+
+        //verificacao via Assert
+        Assert.assertEquals(5.0, locacao.getValor(), 0.01);
+        Assert.assertTrue(DataUtils.isMesmaData(locacao.getDataLocacao(), obterData(28, 4, 2017)));
+        Assert.assertTrue(DataUtils.isMesmaData(locacao.getDataRetorno(), obterData(29, 4, 2017)));
     }
 
     @Test(expected = FilmeSemEstoqueException.class)
@@ -234,7 +244,7 @@ public class LocacaoServiceTest {
     }
 
     @Test
-    public void deveDevolverNaSegundaAoAlugarNoSabado() throws FilmeSemEstoqueException, LocadoraException {
+    public void deveDevolverNaSegundaAoAlugarNoSabado_Assume() throws FilmeSemEstoqueException, LocadoraException {
         // Assume que só deve executar quando o Date() for Sabádo
         Assume.assumeTrue(DataUtils.verificarDiaSemana(new Date(), Calendar.SATURDAY));
 
@@ -242,6 +252,28 @@ public class LocacaoServiceTest {
         Usuario usuario = umUsuario().get();
 
         Filme filme1 = umFilme().get();
+
+        // acao
+        Locacao locacao = service.alugarFilmes(usuario, List.of(filme1));
+
+        // verificacao
+        boolean ehSegunda = DataUtils.verificarDiaSemana(locacao.getDataRetorno(), Calendar.MONDAY);
+
+        Assert.assertTrue(ehSegunda);
+
+        // Verificacao com Matchers
+        MatcherAssert.assertThat(locacao.getDataRetorno(), new DiaSemanaMatcher(Calendar.MONDAY));
+        MatcherAssert.assertThat(locacao.getDataRetorno(), caiEm(Calendar.MONDAY));
+        MatcherAssert.assertThat(locacao.getDataRetorno(), caiNumaSegundaFeira());
+    }
+
+    @Test
+    public void deveDevolverNaSegundaAoAlugarNoSabado_MockObterData() throws FilmeSemEstoqueException, LocadoraException {
+        // cenario
+        Usuario usuario = umUsuario().get();
+        Filme filme1 = umFilme().get();
+
+        doReturn(DataUtils.obterData(29, 4, 2017)).when(service).obterData();
 
         // acao
         Locacao locacao = service.alugarFilmes(usuario, List.of(filme1));
@@ -340,5 +372,21 @@ public class LocacaoServiceTest {
         assertEquals(5.0 * diasProrrogacao, locacaoSalva.getValor(), 0.01);
         MatcherAssert.assertThat(locacaoSalva.getDataLocacao(), ehHoje());
         MatcherAssert.assertThat(locacaoSalva.getDataRetorno(), ehHojeComDiferencaDias(diasProrrogacao));
+    }
+
+    @Test
+    public void deveCalcularValorLocacao() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        // cenario
+        List<Filme> filmes = Collections.singletonList(umFilme().get());
+
+        // acao
+        Class<LocacaoService> clazz = LocacaoService.class;
+        Method calcularValorLocacao = clazz.getDeclaredMethod("calcularValorLocacao", List.class);
+        calcularValorLocacao.setAccessible(true);
+
+        Double valor = (Double) calcularValorLocacao.invoke(service, filmes);
+
+        // verificacao
+        MatcherAssert.assertThat(valor, Is.is(4.0));
     }
 }

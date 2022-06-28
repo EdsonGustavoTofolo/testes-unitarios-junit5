@@ -49,27 +49,14 @@ public class LocacaoService {
 			throw new LocadoraException("Usuario negativado junto ao SPC.");
 		}
 
-		AtomicInteger index = new AtomicInteger();
-		Double valorTotal = filmes.stream().map(filme -> {
-			double preco = switch (index.get()) {
-				case 2 -> filme.getPrecoLocacao() * 0.75;
-				case 3 -> filme.getPrecoLocacao() * 0.50;
-				case 4 -> filme.getPrecoLocacao() * 0.25;
-				case 5 -> 0d;
-				default -> filme.getPrecoLocacao();
-			};
-			index.getAndIncrement();
-			return preco;
-		}).reduce(Double::sum).get();
-
 		Locacao locacao = new Locacao();
 		locacao.setFilmes(filmes);
 		locacao.setUsuario(usuario);
-		locacao.setDataLocacao(new Date());
-		locacao.setValor(valorTotal);
+		locacao.setDataLocacao(obterData());
+		locacao.setValor(calcularValorLocacao(filmes));
 
 		//Entrega no dia seguinte
-		Date dataEntrega = new Date();
+		Date dataEntrega = obterData();
 		dataEntrega = adicionarDias(dataEntrega, 1);
 		if (DataUtils.verificarDiaSemana(dataEntrega, Calendar.SUNDAY)) {
 			dataEntrega = adicionarDias(dataEntrega, 1);
@@ -82,10 +69,30 @@ public class LocacaoService {
 		return locacao;
 	}
 
+	protected Date obterData() {
+		return new Date();
+	}
+
+	private Double calcularValorLocacao(List<Filme> filmes) {
+		AtomicInteger index = new AtomicInteger();
+		Double valorTotal = filmes.stream().map(filme -> {
+			double preco = switch (index.get()) {
+				case 2 -> filme.getPrecoLocacao() * 0.75;
+				case 3 -> filme.getPrecoLocacao() * 0.50;
+				case 4 -> filme.getPrecoLocacao() * 0.25;
+				case 5 -> 0d;
+				default -> filme.getPrecoLocacao();
+			};
+			index.getAndIncrement();
+			return preco;
+		}).reduce(Double::sum).get();
+		return valorTotal;
+	}
+
 	public void notificarAtrasos() {
 		List<Locacao> locacoes = this.locacaoDao.findLocacoesPendentes();
 		locacoes.stream()
-				.filter(locacao -> locacao.getDataRetorno().before(new Date()))
+				.filter(locacao -> locacao.getDataRetorno().before(obterData()))
 				.map(Locacao::getUsuario)
 				.forEach(emailService::notificarAtraso);
 	}
@@ -94,7 +101,7 @@ public class LocacaoService {
 		Locacao novaLocacao = new Locacao();
 		novaLocacao.setUsuario(locacao.getUsuario());
 		novaLocacao.setFilmes(locacao.getFilmes());
-		novaLocacao.setDataLocacao(new Date());
+		novaLocacao.setDataLocacao(obterData());
 		novaLocacao.setDataRetorno(DataUtils.obterDataComDiferencaDias(dias));
 		novaLocacao.setValor(locacao.getValor() * dias);
 		locacaoDao.salvar(novaLocacao);
