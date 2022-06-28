@@ -1,9 +1,13 @@
 package br.ce.wcaquino.servicos;
 
+import br.ce.wcaquino.runners.ParallelRunner;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(ParallelRunner.class)
 public class CalculadoraTest {
 
     private Calculadora calculadora;
@@ -11,6 +15,12 @@ public class CalculadoraTest {
     @Before
     public void setup() {
         this.calculadora = new Calculadora();
+        System.out.println("Iniciando..." + Thread.currentThread().getName());
+    }
+
+    @After
+    public void tearDown() {
+        System.out.println("Finalizando..." + Thread.currentThread().getName());
     }
 
     @Test

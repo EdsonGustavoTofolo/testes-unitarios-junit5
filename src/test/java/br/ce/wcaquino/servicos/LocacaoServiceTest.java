@@ -6,11 +6,13 @@ import br.ce.wcaquino.entidades.Locacao;
 import br.ce.wcaquino.entidades.Usuario;
 import br.ce.wcaquino.exceptions.FilmeSemEstoqueException;
 import br.ce.wcaquino.exceptions.LocadoraException;
-import br.ce.wcaquino.servicos.matchers.DiaSemanaMatcher;
+import br.ce.wcaquino.matchers.DiaSemanaMatcher;
+import br.ce.wcaquino.runners.ParallelRunner;
 import br.ce.wcaquino.utils.DataUtils;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.Is;
 import org.junit.*;
+import org.junit.runner.RunWith;
 import org.mockito.*;
 
 import java.lang.reflect.InvocationTargetException;
@@ -20,16 +22,17 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import static br.ce.wcaquino.servicos.builders.FilmeBuilder.umFilme;
-import static br.ce.wcaquino.servicos.builders.FilmeBuilder.umFilmeSemEstoque;
-import static br.ce.wcaquino.servicos.builders.LocacaoBuilder.umaLocacao;
-import static br.ce.wcaquino.servicos.builders.UsuarioBuilder.umUsuario;
-import static br.ce.wcaquino.servicos.matchers.OwnMatchers.*;
+import static br.ce.wcaquino.builders.FilmeBuilder.umFilme;
+import static br.ce.wcaquino.builders.FilmeBuilder.umFilmeSemEstoque;
+import static br.ce.wcaquino.builders.LocacaoBuilder.umaLocacao;
+import static br.ce.wcaquino.builders.UsuarioBuilder.umUsuario;
+import static br.ce.wcaquino.matchers.OwnMatchers.*;
 import static br.ce.wcaquino.utils.DataUtils.obterData;
 import static br.ce.wcaquino.utils.DataUtils.obterDataComDiferencaDias;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@RunWith(ParallelRunner.class)
 public class LocacaoServiceTest {
 
     @Mock
@@ -64,11 +67,12 @@ public class LocacaoServiceTest {
 //        this.service = new LocacaoService(dao, spcService, emailService);
 
         contador++;
+        System.out.println("Iniciando..." + Thread.currentThread().getName());
     }
 
     @After
     public void tearDown() {
-
+        System.out.println("Finalizando..." + Thread.currentThread().getName());
     }
 
     @Test
